@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pdf
+
+# Environments
+.venv/
+.env
+.env.*
+
+# Cache
+.cache/
+
+# macOS
+.DS_Store
+
+# Tool artifacts
+.data/
+data/
+tmp/
+wandb/
+outputs/
+reports/**/*.html
+reports/**/*.json
+reports/**/*.jsonl
+
+# Sandbox outputs
+sandfuzz_logs/

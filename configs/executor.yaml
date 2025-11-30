@@ -1,0 +1,40 @@
+version: 0.1
+model:
+  name: gpt-4o-mini
+  provider: openai
+  endpoint: https://api.openai.com/v1/chat/completions
+  api_key_env: OPENAI_API_KEY
+  max_tokens: 3072
+  temperature: 0.15
+prompt:
+  system: |
+    You are the Agent0 executor. Solve the task by reasoning step-by-step, calling the Python sandbox when useful, and finish with a boxed final answer.
+    Follow the stop-and-go protocol: wrap code in ```python``` blocks and wait for tool feedback before continuing.
+rollouts:
+  trajectories_per_task: 10
+  max_dialog_turns: 4
+  tool_timeout_s: 15
+  stop_token: "\n\nFINAL ANSWER:"
+adpo:
+  lower_clip: 0.1
+  upper_clip_base: 0.2
+  ambiguity_scale: 0.5
+  min_consistency: 0.05
+  max_consistency: 0.9
+training:
+  algorithm: adpo
+  rollout_batch: 64
+  grad_accum_steps: 4
+  learning_rate: 8.0e-7
+  kl_coeff: 5.0e-3
+  trainer_backend: deepspeed-flexrl
+filtering:
+  self_consistency_band:
+    low: 0.3
+    high: 0.8
+  judge_client: gpt4o-mini-verifier
+  judge_temperature: 0.1
+logging:
+  project: agent0-demo
+  run_name: executor_v0
+  interval_steps: 50

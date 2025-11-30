@@ -1,0 +1,18 @@
+version: 0.1
+sandbox:
+  engine: sandfuzz
+  worker_pool_size: 8
+  python_runtime: python3.11
+  execution_timeout_s: 10
+  memory_limit_mb: 768
+  artifact_dir: data/tool_runs
+stop_go:
+  trigger_regex: "```python[\\s\\S]*?```"
+  max_code_blocks: 5
+  capture_stdout: true
+  capture_stderr: true
+telemetry:
+  log_path: data/tool_runs/logs.jsonl
+  redact_patterns:
+    - "OPENAI_API_KEY"
+    - "AWS_SECRET_ACCESS_KEY"

@@ -1,0 +1,6 @@
+version: 0.1
+loop:
+  curriculum_batch: 2
+  executor_batch: 2
+  iterations: 1
+  executor_samples: 3

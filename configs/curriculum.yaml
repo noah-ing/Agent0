@@ -1,0 +1,39 @@
+version: 0.1
+model:
+  name: gpt-4o-mini
+  provider: openai
+  endpoint: https://api.openai.com/v1/chat/completions
+  api_key_env: OPENAI_API_KEY
+  max_tokens: 2048
+  temperature: 0.2
+prompt:
+  system: |
+    You are the Agent0 curriculum model. Produce challenging tasks wrapped in <question> tags and provide a boxed reference answer.
+    Use multi-part reasoning, reward tool use, and stay within advanced math or general reasoning domains.
+  format_guard:
+    require_tags: ["<question>", "</question>"]
+    boxed_answer: true
+rl:
+  algorithm: grpo
+  rollout_batch: 128
+  grad_accum_steps: 2
+  learning_rate: 1.0e-6
+  kl_coeff: 1.0e-2
+  clip_range: 0.2
+  trainer_backend: deepspeed-flexrl
+rewards:
+  uncertainty:
+    lambda: 0.6
+    band_low: 0.3
+    band_high: 0.8
+  tool_usage:
+    lambda: 0.3
+    cap: 4
+  repetition_penalty:
+    lambda: 0.2
+    bleu_threshold: 0.82
+  format_multiplier: 1.0
+logging:
+  project: agent0-demo
+  run_name: curriculum_v0
+  interval_steps: 50
