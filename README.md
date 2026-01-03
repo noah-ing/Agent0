@@ -10,7 +10,7 @@
 
 This repository provides an independent reproduction of the **Agent0** framework introduced by Xia et al. (2025)[^1]. Agent0 proposes a fully autonomous paradigm for training language model agents without external data through multi-step co-evolution between a *curriculum agent* (task proposer) and an *executor agent* (task solver), augmented with tool-integrated reasoning.
 
-Our reproduction validates the mathematical reasoning improvements reported in the original work using OpenAI's `gpt-4o-mini` as the base model, achieving **82.79%** on GSM8K and **69.62%** on MATH benchmarks - consistent with the gains demonstrated in the paper.
+Our reproduction validates the mathematical reasoning improvements reported in the original work using OpenAI's `gpt-4o-mini` as the base model, achieving **82.79%** on GSM8K and **69.62%** on MATH benchmarks—consistent with the gains demonstrated in the paper.
 
 ## 1. Introduction
 
@@ -19,7 +19,7 @@ Large Language Model (LLM) agents trained with reinforcement learning face a fun
 1. **Curriculum Agent**: Proposes increasingly challenging *frontier tasks* calibrated to the executor's current skill level.
 2. **Executor Agent**: Learns to solve these tasks using external tools (e.g., Python interpreter, calculators).
 
-This symbiotic competition - where executor improvement pressures the curriculum to propose harder tasks - yields a self-sustaining training signal without external supervision[^1].
+This symbiotic competition—where executor improvement pressures the curriculum to propose harder tasks—yields a self-sustaining training signal without external supervision[^1].
 
 ### 1.1 Contributions of This Reproduction
 
@@ -31,23 +31,23 @@ This symbiotic competition - where executor improvement pressures the curriculum
 
 ```
 Agent0/
-├── configs/ # Hyperparameters (GRPO, ADPO, tool rewards)
-│ └── opencompass/ # Model shims and dataset configurations
-├── data/ # Frontier buffers, rollouts, judge responses
-├── docs/ # Research methodology notes
-├── reports/ # Evaluation summaries, iteration reports
-│ └── evals/ # Promoted benchmark results
-├── scripts/ # Entrypoints and utilities
-│ ├── run_eval.py # Primary evaluation driver
-│ ├── run_opencompass_eval.py # Low-level OpenCompass wrapper
-│ ├── monitor_opencompass.py # Rich-based progress dashboard
-│ └── promote_eval_results.py # Result archival utility
+├── configs/                    # Hyperparameters (GRPO, ADPO, tool rewards)
+│   └── opencompass/            # Model shims and dataset configurations
+├── data/                       # Frontier buffers, rollouts, judge responses
+├── docs/                       # Research methodology notes
+├── reports/                    # Evaluation summaries, iteration reports
+│   └── evals/                  # Promoted benchmark results
+├── scripts/                    # Entrypoints and utilities
+│   ├── run_eval.py             # Primary evaluation driver
+│   ├── run_opencompass_eval.py # Low-level OpenCompass wrapper
+│   ├── monitor_opencompass.py  # Rich-based progress dashboard
+│   └── promote_eval_results.py # Result archival utility
 ├── src/
-│ ├── agents/ # Curriculum/executor wrappers
-│ ├── pipeline/ # Filtering, self-consistency, judge clients
-│ ├── tools/ # Sandbox orchestration
-│ └── training/ # GRPO, ADPO, rollout managers
-└── outputs/ # OpenCompass artifacts
+│   ├── agents/                 # Curriculum/executor wrappers
+│   ├── pipeline/               # Filtering, self-consistency, judge clients
+│   ├── tools/                  # Sandbox orchestration
+│   └── training/               # GRPO, ADPO, rollout managers
+└── outputs/                    # OpenCompass artifacts
 ```
 
 ## 3. Environment Setup
@@ -99,9 +99,9 @@ python scripts/run_eval.py --suite math-lite --max-workers 1
 **Production run with monitoring and auto-promotion (recommended):**
 ```bash
 caffeinate -di sh -c 'source .venv/bin/activate && \
- python scripts/run_eval.py --suite math-lite \
- --work-dir outputs/opencompass/$(date +%Y%m%d) \
- --max-workers 1 --monitor --promote'
+  python scripts/run_eval.py --suite math-lite \
+    --work-dir outputs/opencompass/$(date +%Y%m%d) \
+    --max-workers 1 --monitor --promote'
 ```
 
 The `--monitor` flag launches a Rich-powered dashboard displaying per-dataset progress, ETAs, and stall detection. The `--promote` flag automatically archives results to `reports/evals/` and updates this README upon completion.
@@ -129,8 +129,8 @@ We report results across two independent runs to assess variance:
 |-----|------|-------|------|---------|
 | 1 | 2025-11-28 | 82.79 | 70.38 | ~20h |
 | 2 | 2025-11-29 | 82.79 | 69.62 | ~19.5h |
-| **Mean** | - | **82.79** | **70.00** | - |
-| **Std** | - | ±0.00 | ±0.38 | - |
+| **Mean** | — | **82.79** | **70.00** | — |
+| **Std** | — | ±0.00 | ±0.38 | — |
 
 ### 5.2 Latest Benchmark Snapshot
 
@@ -191,11 +191,11 @@ If you use this reproduction in your research, please cite the original Agent0 p
 
 ```bibtex
 @article{xia2025agent0,
- title={Agent0: Unleashing Self-Evolving Agents from Zero Data via Tool-Integrated Reasoning},
- author={Xia, Peng and Zeng, Kaide and Liu, Jiaqi and Qin, Can and Wu, Fang and 
- Zhou, Yiyang and Xiong, Caiming and Yao, Huaxiu},
- journal={arXiv preprint arXiv:2511.16043},
- year={2025}
+  title={Agent0: Unleashing Self-Evolving Agents from Zero Data via Tool-Integrated Reasoning},
+  author={Xia, Peng and Zeng, Kaide and Liu, Jiaqi and Qin, Can and Wu, Fang and 
+          Zhou, Yiyang and Xiong, Caiming and Yao, Huaxiu},
+  journal={arXiv preprint arXiv:2511.16043},
+  year={2025}
 }
 ```
 
