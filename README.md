@@ -10,7 +10,7 @@
 
 This repository provides an independent reproduction of the **Agent0** framework introduced by Xia et al. (2025)[^1]. Agent0 proposes a fully autonomous paradigm for training language model agents without external data through multi-step co-evolution between a *curriculum agent* (task proposer) and an *executor agent* (task solver), augmented with tool-integrated reasoning.
 
-Our reproduction validates the mathematical reasoning improvements reported in the original work using OpenAI's `gpt-4o-mini` as the base model, achieving **82.79%** on GSM8K and **69.62%** on MATH benchmarks—consistent with the gains demonstrated in the paper.
+Our reproduction validates the mathematical reasoning improvements reported in the original work using OpenAI's `gpt-4o-mini` as the base model, achieving **82.79%** on GSM8K and **69.62%** on MATH benchmarks - consistent with the gains demonstrated in the paper.
 
 ## 1. Introduction
 
@@ -19,7 +19,7 @@ Large Language Model (LLM) agents trained with reinforcement learning face a fun
 1. **Curriculum Agent**: Proposes increasingly challenging *frontier tasks* calibrated to the executor's current skill level.
 2. **Executor Agent**: Learns to solve these tasks using external tools (e.g., Python interpreter, calculators).
 
-This symbiotic competition—where executor improvement pressures the curriculum to propose harder tasks—yields a self-sustaining training signal without external supervision[^1].
+This symbiotic competition - where executor improvement pressures the curriculum to propose harder tasks - yields a self-sustaining training signal without external supervision[^1].
 
 ### 1.1 Contributions of This Reproduction
 
@@ -129,8 +129,8 @@ We report results across two independent runs to assess variance:
 |-----|------|-------|------|---------|
 | 1 | 2025-11-28 | 82.79 | 70.38 | ~20h |
 | 2 | 2025-11-29 | 82.79 | 69.62 | ~19.5h |
-| **Mean** | — | **82.79** | **70.00** | — |
-| **Std** | — | ±0.00 | ±0.38 | — |
+| **Mean** | - | **82.79** | **70.00** | - |
+| **Std** | - | ±0.00 | ±0.38 | - |
 
 ### 5.2 Latest Benchmark Snapshot
 
