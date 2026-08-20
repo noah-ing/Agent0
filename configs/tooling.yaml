@@ -7,7 +7,7 @@ sandbox:
   memory_limit_mb: 768
   artifact_dir: data/tool_runs
 stop_go:
-  trigger_regex: "```python[\\s\\S]*?```"
+  trigger_regex: "```python\\s*\\n([\\s\\S]*?)```"
   max_code_blocks: 5
   capture_stdout: true
   capture_stderr: true

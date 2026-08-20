@@ -1,46 +1,57 @@
-# Agent0 Iteration Report Template
+# Prototype Orchestration Smoke Test
 
-> Duplicate this file into `reports/iter_XXX.md` and replace bracketed tokens.
+> Historical, partial log from 2025-11-26. This was not a completed
+> curriculum/executor co-training run. Raw telemetry and rollout artifacts are
+> not versioned, so the retained summary values are not independently
+> reproducible.
 
-## Run Metadata
+## Run metadata
+
 - **Date:** 2025-11-26
-- **Run Name:** iter_openai
-- **Telemetry File:** reports/telemetry_openai.jsonl
-- **Git Commit:** unknown
-- **Data Sources:** N/A
+- **Run name:** `iter_openai`
+- **Git commit:** Not recorded
+- **Source artifacts:** Not retained in version control
 
-## Curriculum Summary
-- Total prompts sampled: 2
-- Mean reward: 0.4830
-- Reward breakdown plot: attach from W&B or `reports/figures/reward_breakdown.png`.
-- Notable task seeds:
-  1. GSM8K seed
-  2. MATH seed
+## Curriculum summary
 
-## Frontier Filtering
+- Prompts sampled: 2
+- Reported mean reward: 0.4830
+- Reward breakdown figure: Not captured
+- Task seed labels: GSM8K and MATH
+
+The reward is a computed orchestration signal; it is not evidence of a model
+parameter update.
+
+## Frontier filtering
+
 - Accepted / total: 0 / 2
 - Consistency band: [0.30, 0.80]
 - Judge pass rate: 0.0000
-- Common rejection reasons: repetition=0, out-of-band=0
+- Detailed rejection reasons: Not retained
 
-## Executor Rollouts
-- Mean turns per rollout: 5.33
-- Tool events per rollout (p50 / p90): 2.00 / 2.50
-- Example trace: link to `data/rollouts/(attach rollout file)`
+## Executor rollouts
 
-## Training Signals
-- GRPO reward mean/std: 0.4830 / 0.0010
-- ADPO adv mean/std: N/A / N/A
-- TRL backend status: not configured
+- Reported mean turns per rollout: 5.33
+- Reported tool events per rollout (p50 / p90): 2.00 / 2.50
+- Example trace: Not retained
 
-## OpenCompass Snapshot (optional)
-- Suite: math-lite
-- Key metrics:
-  - GSM8K acc: N/A
-  - MATH acc: N/A
-  - BBH avg: N/A
+## Training signals
 
-## Postmortem / Next Actions
-- Successes: TBD
-- Issues: TBD
-- Next iteration focus: TBD
+- Reported GRPO reward mean / standard deviation: 0.4830 / 0.0010
+- ADPO advantage: Not produced because the frontier was empty
+- TRL backend: Not configured
+- Optimizer update: Not demonstrated
+
+## OpenCompass evaluation
+
+OpenCompass evaluation was not part of this smoke test. See the separate
+[2025-11-28](evals/20251128_mathlite.md) and
+[2025-11-29](evals/20251129_151443.md) benchmark summaries.
+
+## Outcome
+
+- The prototype generated and scored two curriculum prompts.
+- No samples entered the executor-training frontier.
+- No configured training backend or retained artifacts establish a model update.
+- A future training claim would require a versioned commit, sanitized run
+  manifest, retained traces, checkpoint identifiers, and controlled baselines.

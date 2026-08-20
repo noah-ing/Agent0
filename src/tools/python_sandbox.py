@@ -3,13 +3,28 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, TypedDict
 
 import json
 import os
 import re
 import subprocess
 import time
+
+
+_SANDBOX_ENV_ALLOWLIST = ("PATH", "LANG", "LC_ALL", "LC_CTYPE", "TMPDIR", "SYSTEMROOT")
+_UNSAFE_TASK_ID_CHARS = re.compile(r"[^A-Za-z0-9_.-]+")
+
+
+def _sandbox_environment() -> Dict[str, str]:
+    """Return the small, non-secret environment passed to the sandbox CLI."""
+    return {name: os.environ[name] for name in _SANDBOX_ENV_ALLOWLIST if name in os.environ}
+
+
+def _safe_artifact_id(task_id: str) -> str:
+    """Keep artifact names inside the configured directory."""
+    normalized = _UNSAFE_TASK_ID_CHARS.sub("_", task_id).strip("._")
+    return (normalized or "task")[:96]
 
 
 @dataclass
@@ -31,6 +46,20 @@ class StopGoConfig:
     capture_stderr: bool
 
 
+class SandboxResult(TypedDict):
+    task_id: str
+    code: str
+    stdout: str
+    stderr: str
+    status: str
+    latency_s: float
+
+
+class StopGoResult(TypedDict):
+    patched_response: str
+    tool_events: Optional[List[SandboxResult]]
+
+
 class PythonSandbox:
     """Delegates code blocks to SandFuzz CLI and captures stdout/stderr."""
 
@@ -40,15 +69,15 @@ class PythonSandbox:
         if self.config.log_path:
             self.config.log_path.parent.mkdir(parents=True, exist_ok=True)
 
-    def _log_payload(self, payload: Dict[str, str]) -> None:
+    def _log_payload(self, payload: SandboxResult) -> None:
         if not self.config.log_path:
             return
         with self.config.log_path.open("a", encoding="utf-8") as sink:
             sink.write(json.dumps(payload) + "\n")
 
-    def execute(self, code: str, task_id: str) -> Dict[str, str]:
+    def execute(self, code: str, task_id: str) -> SandboxResult:
         cmd = [
-            "sandfuzz",
+            self.config.engine,
             "run",
             "--lang",
             self.config.python_runtime,
@@ -65,6 +94,7 @@ class PythonSandbox:
                 capture_output=True,
                 timeout=self.config.execution_timeout_s + 2,
                 check=False,
+                env=_sandbox_environment(),
             )
             status = "ok" if proc.returncode == 0 else f"exit-{proc.returncode}"
             stdout = proc.stdout.decode("utf-8", errors="replace")
@@ -72,13 +102,13 @@ class PythonSandbox:
         except FileNotFoundError:
             status = "missing-binary"
             stdout = ""
-            stderr = "sandfuzz binary not found"
+            stderr = f"{self.config.engine} binary not found"
         except subprocess.TimeoutExpired:
             status = "timeout"
             stdout = ""
             stderr = "execution exceeded timeout"
         latency = time.time() - start
-        payload = {
+        payload: SandboxResult = {
             "task_id": task_id,
             "code": code,
             "stdout": stdout,
@@ -86,7 +116,7 @@ class PythonSandbox:
             "status": status,
             "latency_s": latency,
         }
-        artifact_path = self.config.artifact_dir / f"{task_id}.json"
+        artifact_path = self.config.artifact_dir / f"{_safe_artifact_id(task_id)}.json"
         artifact_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
         self._log_payload(payload)
         return payload
@@ -100,13 +130,15 @@ class StopGoController:
         self._cfg = cfg
         self._regex = re.compile(self._cfg.trigger_regex, re.MULTILINE)
 
-    def run(self, response: str, task_id: str) -> Dict[str, Optional[List[Dict[str, str]]]]:
+    def run(self, response: str, task_id: str) -> StopGoResult:
         matches = list(self._regex.finditer(response))[: self._cfg.max_code_blocks]
         if not matches:
             return {"patched_response": response, "tool_events": None}
-        patched = response
-        events: List[Dict[str, str]] = []
+        patched_parts: List[str] = []
+        cursor = 0
+        events: List[SandboxResult] = []
         for idx, match in enumerate(matches):
+            patched_parts.append(response[cursor : match.end()])
             code = match.group(1) if match.groups() else match.group(0)
             exec_id = f"{task_id}_code{idx}"
             result = self._sandbox.execute(code, exec_id)
@@ -117,5 +149,8 @@ class StopGoController:
             if self._cfg.capture_stderr and result.get("stderr"):
                 snippets.append(f"[tool stderr]\n{result['stderr']}")
             trailer = "\n\n" + "\n".join(snippets) if snippets else ""
-            patched = patched.replace(match.group(0), match.group(0) + trailer, 1)
+            patched_parts.append(trailer)
+            cursor = match.end()
+        patched_parts.append(response[cursor:])
+        patched = "".join(patched_parts)
         return {"patched_response": patched, "tool_events": events}

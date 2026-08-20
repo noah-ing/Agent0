@@ -134,6 +134,9 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--date", default=_dt.date.today().isoformat())
     parser.add_argument("--git-sha", default=None)
     parser.add_argument("--datasets", nargs="*", default=None)
+    parser.add_argument("--model-checkpoint", default="not recorded")
+    parser.add_argument("--env-digest", default="not recorded")
+    parser.add_argument("--update-evidence", default="not demonstrated")
     parser.add_argument("--curriculum-batch", type=int, default=None)
     parser.add_argument("--tasks", nargs="*", default=None, help="Notable curriculum seeds (ordered)")
     parser.add_argument("--trace-file", default="", help="Relative path to exemplar rollout JSON")
@@ -181,6 +184,8 @@ def _build_placeholder_map(args: argparse.Namespace, stats) -> Dict[str, str]:
         "TELEMETRY_PATH": str(args.telemetry),
         "GIT_SHA": git_sha,
         "DATASETS": datasets,
+        "MODEL_CHECKPOINT": args.model_checkpoint,
+        "ENV_DIGEST": args.env_digest,
         "CURRICULUM_BATCH": _format_int(args.curriculum_batch or stats.counts.get("curriculum/reward")),
         "MEAN_REWARD": _format_float(grpo_mean),
         "TASK_1": task_1,
@@ -202,6 +207,7 @@ def _build_placeholder_map(args: argparse.Namespace, stats) -> Dict[str, str]:
         "ADPO_MEAN": _format_float(adpo_mean),
         "ADPO_STD": _format_float(adpo_std),
         "TRL_STATUS": args.trl_status,
+        "UPDATE_EVIDENCE": args.update_evidence,
         "EVAL_SUITE": args.eval_suite,
         "GSM8K_ACC": _format_float(args.gsm8k_acc, precision=2),
         "MATH_ACC": _format_float(args.math_acc, precision=2),
