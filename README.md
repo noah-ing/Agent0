@@ -1,220 +1,212 @@
-# Agent0: A Reproduction Study
+# Agent0 Evaluation Harness
 
-> **Reproducing Self-Evolving Agents via Tool-Integrated Reasoning**
+> OpenCompass benchmark tooling for evaluating `gpt-4o-mini` on GSM8K and MATH.
 
-[![arXiv](https://img.shields.io/badge/arXiv-2511.16043-b31b1b.svg)](https://arxiv.org/abs/2511.16043)
+[![Agent0 paper](https://img.shields.io/badge/arXiv-2511.16043-b31b1b.svg)](https://arxiv.org/abs/2511.16043)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![OpenCompass](https://img.shields.io/badge/Eval-OpenCompass-green.svg)](https://github.com/open-compass/opencompass)
 
-## Abstract
+> [!IMPORTANT]
+> This repository does **not** reproduce Agent0's curriculum/executor co-training. Its recorded scores are evaluations of an off-the-shelf `gpt-4o-mini` endpoint, not gains produced by the Agent0 training method.
 
-This repository provides an independent reproduction of the **Agent0** framework introduced by Xia et al. (2025)[^1]. Agent0 proposes a fully autonomous paradigm for training language model agents without external data through multi-step co-evolution between a *curriculum agent* (task proposer) and an *executor agent* (task solver), augmented with tool-integrated reasoning.
+## Scope
 
-Our reproduction validates the mathematical reasoning improvements reported in the original work using OpenAI's `gpt-4o-mini` as the base model, achieving **82.79%** on GSM8K and **69.62%** on MATH benchmarks - consistent with the gains demonstrated in the paper.
+This project is an independent evaluation harness inspired by the
+[Agent0 paper](https://arxiv.org/abs/2511.16043). It provides:
 
-## 1. Introduction
+- OpenCompass dataset configurations for GSM8K and MATH;
+- an OpenAI-compatible model shim configured through environment variables;
+- scripts for launching, monitoring, and promoting long-running benchmark results; and
+- compact, versioned summaries from two `gpt-4o-mini` evaluation runs.
 
-Large Language Model (LLM) agents trained with reinforcement learning face a fundamental constraint: dependence on human-curated data limits scalability and tethers model capabilities to existing human knowledge. Xia et al. address this limitation by introducing Agent0, which establishes a self-reinforcing loop between two co-evolving agents:
+The repository also contains experimental curriculum/executor orchestration,
+frontier-filtering, reward-shaping, and trainer interfaces. Those modules are
+prototype scaffolding. They have not demonstrated end-to-end co-training,
+produced a trained Agent0 checkpoint, or reproduced the paper's reported
+training improvements. The current FlexRL backend logs batch sizes rather than
+performing optimizer updates, and optional TRL bridges require separately
+configured local models.
 
-1. **Curriculum Agent**: Proposes increasingly challenging *frontier tasks* calibrated to the executor's current skill level.
-2. **Executor Agent**: Learns to solve these tasks using external tools (e.g., Python interpreter, calculators).
+For the authors' implementation of the training method, see
+[aiming-lab/Agent0](https://github.com/aiming-lab/Agent0).
 
-This symbiotic competition - where executor improvement pressures the curriculum to propose harder tasks - yields a self-sustaining training signal without external supervision[^1].
+## What the benchmark establishes
 
-### 1.1 Contributions of This Reproduction
+The checked-in summaries show that the harness can send GSM8K and MATH prompts
+through OpenCompass to an OpenAI-compatible `gpt-4o-mini` endpoint and collect
+the corresponding accuracy metrics.
 
-- Full-fidelity evaluation harness using OpenCompass[^2] against GSM8K[^3] and MATH[^4] benchmarks.
-- Automated monitoring infrastructure for long-running (~20h) evaluation sweeps.
-- Reproducible environment configuration targeting real OpenAI endpoints (no mock layers).
+They do **not** establish:
 
-## 2. Repository Structure
+- curriculum-agent or executor-agent parameter updates;
+- multi-step co-evolution between those agents;
+- a causal improvement over a frozen-model baseline;
+- parity with the paper's Qwen-based training setup; or
+- independent verification of the historical runs from raw artifacts.
 
-```
+The full OpenCompass work directories are gitignored; this repository retains
+the configurations and concise result summaries.
+
+## Repository layout
+
+```text
 Agent0/
-├── configs/                    # Hyperparameters (GRPO, ADPO, tool rewards)
-│   └── opencompass/            # Model shims and dataset configurations
-├── data/                       # Frontier buffers, rollouts, judge responses
-├── docs/                       # Research methodology notes
-├── reports/                    # Evaluation summaries, iteration reports
-│   └── evals/                  # Promoted benchmark results
-├── scripts/                    # Entrypoints and utilities
-│   ├── run_eval.py             # Primary evaluation driver
-│   ├── run_opencompass_eval.py # Low-level OpenCompass wrapper
-│   ├── monitor_opencompass.py  # Rich-based progress dashboard
-│   └── promote_eval_results.py # Result archival utility
-├── src/
-│   ├── agents/                 # Curriculum/executor wrappers
-│   ├── pipeline/               # Filtering, self-consistency, judge clients
-│   ├── tools/                  # Sandbox orchestration
-│   └── training/               # GRPO, ADPO, rollout managers
-└── outputs/                    # OpenCompass artifacts
+├── configs/
+│   └── opencompass/            # Model and GSM8K/MATH dataset configs
+├── docs/                       # Research planning notes
+├── reports/
+│   └── evals/                  # Checked-in benchmark summaries
+├── scripts/
+│   ├── run_eval.py             # Evaluation entry point
+│   ├── run_opencompass_eval.py # OpenCompass command builder
+│   ├── monitor_opencompass.py  # Progress dashboard
+│   └── promote_eval_results.py # Summary promotion utility
+└── src/
+    ├── agents/                 # Experimental agent clients
+    ├── pipeline/               # Filtering, judging, and rewards
+    ├── tools/                  # Sandbox integration
+    └── training/               # Experimental trainer scaffolding
 ```
 
-## 3. Environment Setup
+## Setup
 
-### 3.1 Prerequisites
+### Prerequisites
 
-- **Python**: 3.11+
-- **macOS**: Tested on Apple Silicon; Linux should work with minor path adjustments.
-- **API Access**: Valid OpenAI API key with access to `gpt-4o-mini`.
+- Python 3.11+
+- an OpenAI API key with access to `gpt-4o-mini`
+- macOS or Linux (the recorded long runs used Apple Silicon macOS)
 
-### 3.2 Installation
+Create an environment and install the evaluation dependencies:
 
 ```bash
-cd Agent0
 python -m venv .venv
 source .venv/bin/activate
-pip install --upgrade pip
-pip install torch==2.4.1 opencompass==0.5.1 wandb==0.17.8 rich pyyaml python-dotenv
+python -m pip install --upgrade pip
+python -m pip install opencompass==0.5.1 rich pyyaml python-dotenv
 ```
 
-### 3.3 Configuration
+Create a gitignored `.env` file:
 
-Create a `.env` file (gitignored) with your credentials:
-
-```env
-OPENAI_API_KEY=sk-...
-
-# Evaluation endpoint configuration
+```dotenv
+OPENAI_API_KEY=replace-with-your-key
 AGENT0_VLLM_BASE=https://api.openai.com/v1
 AGENT0_EVAL_MODEL=gpt-4o-mini
-AGENT0_EVAL_API_KEY=${OPENAI_API_KEY}
-
-# Optional: W&B telemetry
-AGENT0_USE_WANDB=0
-AGENT0_WANDB_PROJECT=agent0-repro
+AGENT0_EVAL_API_KEY=replace-with-your-key
 ```
 
-## 4. Evaluation Protocol
+Never commit real credentials. OpenCompass evaluation calls can incur API
+charges; review the selected datasets and endpoint before starting a run.
 
-We evaluate using OpenCompass[^2], following the same benchmark suite as the original paper.
+## Evaluation Harness (OpenCompass)
 
-### 4.1 Running Evaluations
+Inspect the generated command without making API calls:
 
-**Standard execution:**
+```bash
+python scripts/run_eval.py --suite math-lite --dry-run
+```
+
+Run the GSM8K and MATH suite:
+
 ```bash
 python scripts/run_eval.py --suite math-lite --max-workers 1
 ```
 
-**Production run with monitoring and auto-promotion (recommended):**
+Use the built-in monitor and promote a completed summary:
+
 ```bash
-caffeinate -di sh -c 'source .venv/bin/activate && \
-  python scripts/run_eval.py --suite math-lite \
-    --work-dir outputs/opencompass/$(date +%Y%m%d) \
-    --max-workers 1 --monitor --promote'
+python scripts/run_eval.py \
+  --suite math-lite \
+  --work-dir outputs/opencompass \
+  --max-workers 1 \
+  --monitor \
+  --promote
 ```
 
-The `--monitor` flag launches a Rich-powered dashboard displaying per-dataset progress, ETAs, and stall detection. The `--promote` flag automatically archives results to `reports/evals/` and updates this README upon completion.
+For an existing work directory:
 
-### 4.2 Monitoring Long Runs
-
-For runs already in progress:
 ```bash
-python scripts/monitor_opencompass.py <work-dir>
+python scripts/monitor_opencompass.py outputs/opencompass
 ```
 
-The monitor displays:
-- Per-dataset completion percentage
-- Problems per minute throughput
-- Estimated time remaining
-- Stall detection (5-minute threshold)
+## Recorded results
 
-## 5. Results
+| Run | Date | Endpoint model | GSM8K | MATH | Report |
+| --- | --- | --- | ---: | ---: | --- |
+| 1 | 2025-11-28 | `gpt-4o-mini` | 82.79 | 70.38 | [summary](reports/evals/20251128_mathlite.md) |
+| 2 | 2025-11-29 | `gpt-4o-mini` | 82.79 | 69.62 | [summary](reports/evals/20251129_151443.md) |
 
-### 5.1 Benchmark Scores
-
-We report results across two independent runs to assess variance:
-
-| Run | Date | GSM8K | MATH | Runtime |
-|-----|------|-------|------|---------|
-| 1 | 2025-11-28 | 82.79 | 70.38 | ~20h |
-| 2 | 2025-11-29 | 82.79 | 69.62 | ~19.5h |
-| **Mean** | - | **82.79** | **70.00** | - |
-| **Std** | - | ±0.00 | ±0.38 | - |
-
-### 5.2 Latest Benchmark Snapshot
+### Latest Benchmark Snapshot
 
 | Dataset | Config | Metric | Mode | Score |
-|---------|--------|--------|------|-------|
+| --- | --- | --- | --- | ---: |
 | GSM8K | `gsm8k_gen_1d7fe4` | accuracy | `gen` | **82.79** |
-| MATH | `math_gen_393424` | accuracy | `gen` | **69.62** |
+| MATH | `math_0shot_gen_393424` | accuracy | `gen` | **69.62** |
 
-> *Evaluated using `gpt-4o-mini` via OpenAI API. Single-worker inference, ~13s/problem average on MATH.*
+These are historical endpoint-evaluation results. A direct numerical comparison
+with the paper is not valid because the model, training state, and evaluation
+protocol differ. API-backed results can also vary across provider revisions
+even when temperature is set to zero.
 
-### 5.3 Comparison with Original Results
+## Experimental co-evolution code
 
-The original Agent0 paper reports improvements over the Qwen3-8B-Base model[^1]:
+`scripts/run_demo.py` wires together prototype curriculum and executor
+clients, filtering, reward calculations, sandbox calls, and trainer adapters.
+By default, the backend in `src/training/backends.py` records batch sizes
+rather than performing a real optimizer update. Optional TRL adapters are
+activated only when separately supplied model settings are present.
 
-| Model | GSM8K | MATH (avg) |
-|-------|-------|------------|
-| Qwen3-8B-Base | 89.1 | 52.0 |
-| Qwen3-8B-Base + Tool | 90.7 | 60.3 |
-| **+ Agent0** | **94.5** | **62.4** |
+Treat this path as exploratory code, not as evidence that the Agent0 algorithm
+has been reproduced.
 
-Our reproduction uses `gpt-4o-mini` rather than fine-tuned Qwen checkpoints, so direct numerical comparison is not applicable. However, our results demonstrate that the evaluation infrastructure correctly interfaces with OpenAI-compatible endpoints and produces stable, reproducible scores.
+## Security and data handling
 
-## 6. Implementation Notes
+- Keep endpoint credentials in the gitignored `.env` file and scope them to the
+  minimum models and spend required for a run.
+- Model-generated Python is delegated to the external SandFuzz executable. This
+  repository does not treat that boundary as hardened isolation; run it in a
+  disposable environment without sensitive files or unrestricted network access.
+- The sandbox child process receives only a small allowlist of non-secret
+  environment variables. Tool code, stdout, stderr, prompts, and rollout data can
+  still be sensitive and are written beneath gitignored local artifact paths.
+- Review generated artifacts before sharing them. The configured telemetry
+  labels are documentation, not a general-purpose content redaction system.
 
-### 6.1 Model Shim
+## Known limitations
 
-The OpenCompass model shim (`configs/opencompass/models/agent0_vllm.py`) wraps any OpenAI-compatible endpoint:
+1. There is no end-to-end, validated curriculum/executor co-training run.
+2. No trained checkpoint or controlled before/after comparison is published.
+3. Raw OpenCompass output directories are not included in version control.
+4. The environment is documented but not lockfile-pinned.
+5. The recorded runs use a hosted model that can change independently of this repository.
 
-```python
-# Key environment variables:
-# AGENT0_VLLM_BASE - API base URL
-# AGENT0_EVAL_MODEL - Model identifier
-# AGENT0_EVAL_API_KEY - Authentication token
-```
+## Roadmap
 
-### 6.2 Dataset Configuration
+- [ ] Implement and test real curriculum/executor optimizer updates.
+- [ ] Add unit and integration tests for the project-owned modules.
+- [ ] Publish sanitized run manifests with model, prompt, dependency, and commit metadata.
+- [ ] Add frozen-model baselines and controlled ablations before making training claims.
 
-The `math-lite` suite includes:
-- **GSM8K**: 1,319 grade-school math word problems[^3]
-- **MATH**: 5,000 competition-level problems across algebra, geometry, and calculus[^4]
+## Citation
 
-### 6.3 Known Limitations
-
-1. **Single-worker throughput**: API rate limits constrain parallelism; expect ~20h for full `math-lite` suite.
-2. **macOS sleep prevention**: Long runs require `caffeinate -di` to prevent system sleep.
-3. **Progress visibility**: OpenCompass master progress bar updates only after first dataset completes; use `--monitor` for real-time visibility.
-
-## 7. Roadmap
-
-- [ ] Integrate BBH (Big-Bench Hard) benchmark suite
-- [ ] Add curriculum-executor co-training loop with GRPO/ADPO
-- [ ] Implement self-consistency band filtering from original paper
-- [ ] Scale to multi-GPU vLLM endpoints for improved throughput
-
-## 8. Citation
-
-If you use this reproduction in your research, please cite the original Agent0 paper:
+If this harness informs research on Agent0, cite the original paper:
 
 ```bibtex
 @article{xia2025agent0,
   title={Agent0: Unleashing Self-Evolving Agents from Zero Data via Tool-Integrated Reasoning},
-  author={Xia, Peng and Zeng, Kaide and Liu, Jiaqi and Qin, Can and Wu, Fang and 
+  author={Xia, Peng and Zeng, Kaide and Liu, Jiaqi and Qin, Can and Wu, Fang and
           Zhou, Yiyang and Xiong, Caiming and Yao, Huaxiu},
   journal={arXiv preprint arXiv:2511.16043},
   year={2025}
 }
 ```
 
-## 9. Acknowledgments
+## License
 
-We thank the authors of Agent0 for releasing their methodology and the [AIMING Lab](https://aiming-lab.github.io/Agent0) for maintaining the official repository. This reproduction uses [OpenCompass](https://github.com/open-compass/opencompass) for evaluation infrastructure.
+Licensed under the [Apache License 2.0](LICENSE).
 
-## References
+## Acknowledgments
 
-[^1]: Xia, P., Zeng, K., Liu, J., Qin, C., Wu, F., Zhou, Y., Xiong, C., & Yao, H. (2025). Agent0: Unleashing Self-Evolving Agents from Zero Data via Tool-Integrated Reasoning. *arXiv preprint arXiv:2511.16043*. https://arxiv.org/abs/2511.16043
-
-[^2]: OpenCompass Contributors. (2024). OpenCompass: A Universal Evaluation Platform for Foundation Models. https://github.com/open-compass/opencompass
-
-[^3]: Cobbe, K., Kosaraju, V., Bavarian, M., Chen, M., Jun, H., Kaiser, L., Plappert, M., Tworek, J., Hilton, J., Nakano, R., Hesse, C., & Schulman, J. (2021). Training Verifiers to Solve Math Word Problems. *arXiv preprint arXiv:2110.14168*.
-
-[^4]: Hendrycks, D., Burns, C., Kadavath, S., Arber, A., Basart, S., Tang, E., Song, D., & Steinhardt, J. (2021). Measuring Mathematical Problem Solving With the MATH Dataset. *arXiv preprint arXiv:2103.03874*.
-
----
-
-*This reproduction study is not affiliated with the original Agent0 authors. For the official implementation, see [aiming-lab/Agent0](https://github.com/aiming-lab/Agent0).*
-
-
+This repository is not affiliated with the Agent0 authors. It uses
+[OpenCompass](https://github.com/open-compass/opencompass) for evaluation and
+credits the [Agent0 authors](https://aiming-lab.github.io/Agent0) for the
+research direction.

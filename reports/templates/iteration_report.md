@@ -8,6 +8,8 @@
 - **Telemetry File:** {{TELEMETRY_PATH}}
 - **Git Commit:** {{GIT_SHA}}
 - **Data Sources:** {{DATASETS}}
+- **Base model / checkpoint:** {{MODEL_CHECKPOINT}}
+- **Dependency lock or environment digest:** {{ENV_DIGEST}}
 
 ## Curriculum Summary
 - Total prompts sampled: {{CURRICULUM_BATCH}}
@@ -32,6 +34,7 @@
 - GRPO reward mean/std: {{GRPO_MEAN}} / {{GRPO_STD}}
 - ADPO adv mean/std: {{ADPO_MEAN}} / {{ADPO_STD}}
 - TRL backend status: {{TRL_STATUS}}
+- Optimizer update evidence (before/after checkpoint hashes): {{UPDATE_EVIDENCE}}
 
 ## OpenCompass Snapshot (optional)
 - Suite: {{EVAL_SUITE}}

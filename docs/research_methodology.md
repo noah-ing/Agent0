@@ -1,37 +1,54 @@
-# Agent0 Demo Research Methodology
+# Historical implementation plan
 
-## Objectives
-- Reproduce the Agent0 co-evolution paradigm (curriculum + executor) with tool-augmented RL on commodity hardware.
-- Deliver an auditable, extensible demo that mirrors the paper's academic rigor and enables rapid iteration on reward design, tool orchestration, and evaluation.
+> Planning note, written before the prototype was evaluated. Items below are
+> proposed work, not completed experiments or evidence of Agent0 reproduction.
 
-## Guiding Principles
-1. **Problem Framing**: Maintain a living positioning memo capturing hypotheses, assumptions, and success metrics (pass@1 uplift, tool-usage efficiency, curriculum diversity).
-2. **Feasibility Spikes**: Run small pilot jobs (toy math tasks, 1–2 tool calls) before scaling RL loops. Log every spike with configs + seeds.
-3. **Modular Infrastructure**: Config-first code (YAML), reproducible env via `uv` + Brew, W&B tracking, and deterministic data pipelines.
-4. **Iterative Validation**: Unit tests for sandbox/tooling, ablations for algorithms, baseline comparisons against frozen Qwen3 with/without tool.
-5. **Transparent Collaboration**: Weekly memos, structured PRs, TODO backlog, and disciplined experiment logging.
-6. **Reproducibility**: Version datasets/checkpoints (DVC-ready), archive prompts, judge scripts, and hardware notes.
-7. **Reflection Loops**: Post-iteration retros, adjust hypotheses, document learnings before expanding scope.
+## Research question
 
-## Workflow Stages
-1. **Literature + Benchmark Review**: Summaries of Agent0, R-Zero, Socratic-Zero, SPIRAL, plus current (Nov 2025) tool ecosystems.
-2. **Environment Bring-Up**: Brew installs (`uv`, `sandfuzz`, `qwen-vllm`), `uv` env, GPU/remote access notes.
-3. **Tooling Validation**: Deterministic SandFuzz sandbox tests, stop-go protocol harness, error capture.
-4. **Curriculum Agent Prototyping**: Prompt tuning, reward signal simulation (uncertainty/tool/repetition) using synthetic executor responses.
-5. **Executor Pilot**: Self-consistency voting, ADPO math, stress tests on ambiguous tasks.
-6. **Full Co-Evolution Loop**: Alternating curriculum/executor training with frontier filtering, logging, and judge integration.
-7. **Evaluation + Reporting**: OpenCompass harness, GPT-4o Mini verifier, pass@k metrics, difficulty drift analysis, and ablation schedule.
+Can a small, auditable harness reproduce parts of Agent0's curriculum/executor
+orchestration and eventually test co-training claims under controlled baselines?
 
-## Milestones
-- M0: Repo scaffold + tooling smoke tests.
-- M1: Curriculum/executor prompts finalized; sandbox loop demo.
-- M2: Frontier filtering + ADPO training over mini dataset.
-- M3: Full demo iteration with telemetry dashboards and report.
-- M4: Benchmark sweep + ablations aligned with paper tables.
+The current repository does not answer that question. It contains endpoint
+clients, filtering and reward prototypes, trainer interfaces, and an independent
+OpenCompass evaluation of an off-the-shelf model. It does not contain a trained
+checkpoint or a validated optimizer-backed co-evolution run.
 
-## Risk Mitigation
-- **Judge Dependence**: Provide pluggable verifier (GPT-4o Mini vs local sympy grader) to avoid single point of failure.
-- **Tool Abuse**: Hard cap tool rewards, monitor SandFuzz logs, add anti-loop heuristics.
-- **Hardware Limits**: Parameterize batch sizes and rollout counts; support CPU-only debug mode.
+## Proposed method
 
-This document serves as the Stanford-style methodology reference for all subsequent workstreams.
+1. Define hypotheses and success criteria before each experiment, including a
+   frozen-model baseline and a clear primary metric.
+2. Validate tool execution and logging on small synthetic tasks before running
+   model-generated code or paid endpoints at scale.
+3. Version the exact configuration, commit, prompt templates, dataset revisions,
+   seeds, checkpoint identifiers, and sanitized run artifacts.
+4. Separate orchestration signals from parameter updates. A reward calculation,
+   accepted frontier sample, or backend callback is not evidence of learning.
+5. Compare trained and frozen baselines under the same model, tools, prompts,
+   token budget, and evaluation protocol.
+6. Report failed runs and uncertainty alongside successful results.
+
+## Proposed milestones
+
+- **M0 — Harness checks:** unit tests for filtering, rewards, telemetry, and the
+  sandbox adapter.
+- **M1 — Orchestration smoke test:** versioned traces from a small curriculum and
+  executor loop, without a training claim.
+- **M2 — Optimizer integration:** prove that configured trainer steps update a
+  checkpoint and record before/after hashes.
+- **M3 — Controlled experiment:** compare trained and frozen baselines with
+  retained manifests and repeated runs.
+- **M4 — External evaluation:** run a preregistered benchmark and publish enough
+  sanitized evidence for independent review.
+
+## Primary risks
+
+- **Untrusted code:** run model-generated code in a disposable, least-privilege
+  environment; the adapter is not itself a hardened security boundary.
+- **Judge dependence:** use deterministic graders where possible and measure
+  sensitivity to judge choice.
+- **Hosted-model drift:** record provider model identifiers and dates, and avoid
+  claiming deterministic reproduction from API-backed scores alone.
+- **Missing provenance:** treat a metric without its raw manifest and artifacts as
+  a historical observation, not a reproducible result.
+- **Hardware constraints:** keep pilot runs small and publish the actual compute
+  and wall-clock budget.
